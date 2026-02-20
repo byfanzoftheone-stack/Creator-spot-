@@ -24,9 +24,13 @@ class ExceptionLoggingMiddleware(BaseHTTPMiddleware):
 
 
 origins = [o.strip() for o in (settings.CORS_ORIGINS or "").split(",") if o.strip()]
+origin_regex = (settings.CORS_ORIGIN_REGEX or "").strip() or None
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins or ["*"],
+    # Never use allow_origins=["*"] with allow_credentials=True.
+    # If you don't set CORS_ORIGINS in prod, we fall back to localhost dev origins.
+    allow_origins=origins or ["http://localhost:3000", "http://localhost:5173"],
+    allow_origin_regex=origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +42,7 @@ app.add_middleware(ExceptionLoggingMiddleware)
 
 @app.on_event("startup")
 def on_startup():
-    logger.info("Starting application; CORS origins: %s", origins or ["*"])
+    logger.info("Starting application; CORS origins: %s; regex: %s", origins or ["http://localhost:3000", "http://localhost:5173"], origin_regex)
     # init_db will raise if DATABASE_URL missing or connection fails — that's intentional
     init_db()
 
